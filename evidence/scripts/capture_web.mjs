@@ -623,17 +623,47 @@ async function capturePdf(context, item, outputDir, outputPath, sharp, pdftoppm)
   );
   const renderedPath = `${renderPrefix}.png`;
   let pipeline = sharp(renderedPath, { failOn: "error" });
+  const metadata = await pipeline.metadata();
+  const pageWidth = metadata.width || 1;
+  const pageHeight = metadata.height || 1;
+  let cropBox = { left: 0, top: 0, width: pageWidth, height: pageHeight };
   if (item.crop) {
     const crop = item.crop;
-    const metadata = await pipeline.metadata();
     const left = Math.max(0, Math.floor(Number(crop.x || 0)));
     const top = Math.max(0, Math.floor(Number(crop.y || 0)));
-    const width = Math.min((metadata.width || 1) - left, Math.floor(Number(crop.width || metadata.width || 1)));
-    const height = Math.min((metadata.height || 1) - top, Math.floor(Number(crop.height || metadata.height || 1)));
+    const width = Math.min(pageWidth - left, Math.floor(Number(crop.width || pageWidth)));
+    const height = Math.min(pageHeight - top, Math.floor(Number(crop.height || pageHeight)));
     if (width < 1 || height < 1) {
       throw new Error("PDF crop is outside the rendered page.");
     }
+    cropBox = { left, top, width, height };
     pipeline = pipeline.extract({ left, top, width, height });
+  }
+  const highlightRects = [];
+  for (const highlight of item.highlights || []) {
+    const pageLeft = Math.max(0, Math.floor(Number(highlight.x || 0)));
+    const pageTop = Math.max(0, Math.floor(Number(highlight.y || 0)));
+    const pageRight = Math.min(pageWidth, pageLeft + Math.floor(Number(highlight.width || 0)));
+    const pageBottom = Math.min(pageHeight, pageTop + Math.floor(Number(highlight.height || 0)));
+    const left = Math.max(0, pageLeft - cropBox.left);
+    const top = Math.max(0, pageTop - cropBox.top);
+    const right = Math.min(cropBox.width, pageRight - cropBox.left);
+    const bottom = Math.min(cropBox.height, pageBottom - cropBox.top);
+    if (right > left && bottom > top) {
+      highlightRects.push({ left, top, width: right - left, height: bottom - top });
+    }
+  }
+  if ((item.highlights || []).length > 0 && highlightRects.length === 0) {
+    throw new Error("PDF highlights do not intersect the selected crop.");
+  }
+  if (highlightRects.length > 0) {
+    const rectangles = highlightRects.map((rect) =>
+      '<rect x="' + rect.left + '" y="' + rect.top + '" width="' + rect.width + '" height="' + rect.height + '" fill="#FFF2A8" fill-opacity="0.38" stroke="#D71920" stroke-width="5"/>'
+    ).join("");
+    const overlay = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="' + cropBox.width + '" height="' + cropBox.height + '">' + rectangles + '</svg>'
+    );
+    pipeline = pipeline.composite([{ input: overlay, top: 0, left: 0 }]);
   }
   const buffer = await pipeline.png().toBuffer();
   await resizePng(sharp, buffer, outputPath);
@@ -644,6 +674,8 @@ async function capturePdf(context, item, outputDir, outputPath, sharp, pdftoppm)
     page_title: item.title || null,
     screenshot_path: outputPath,
     page_number: pageNumber,
+    crop: item.crop || null,
+    highlight_count: highlightRects.length,
   };
 }
 

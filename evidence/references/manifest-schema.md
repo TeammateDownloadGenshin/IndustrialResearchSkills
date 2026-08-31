@@ -152,7 +152,7 @@ Allowed support levels are `direct`, `partial`, and `derived`.
 }
 ```
 
-For `kind: "pdf"`, provide `page_number` and optionally a pixel crop with `x`, `y`, `width`, and `height`. Capture results include status, final URL, screenshot path, and an English error message when capture fails.
+For `kind: "pdf"`, provide `page_number` and optionally a pixel crop with `x`, `y`, `width`, and `height`. Add `highlights` as an array of page-pixel rectangles using the same keys. PDF pages are rendered at 200 DPI; highlight coordinates refer to the full rendered page before cropping. Each intersecting highlight is drawn with a pale-yellow translucent fill and a red outline after the crop is applied. Capture results include the applied crop, highlight count, status, final URL, screenshot path, and an English error message when capture fails.
 
 HTML capture results also record `match_methods`, `capture_method`, `dismissed_consent_count`, and an optional `support_warning`. Normalized DOM matching can locate quotations split across nested elements or irregular whitespace. Distinctive product, phase, conference, and numeric anchors may recover a passage when the planned quotation uses a different language. A title-context fallback always carries `support_warning` and requires manual review. A remaining consent layer that overlaps the supporting passage returns `obstructed_overlay` instead of producing a misleading screenshot.
 
