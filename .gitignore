@@ -1,0 +1,8 @@
+evidence/result/
+node_modules/
+output/
+*.inspect.ndjson
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

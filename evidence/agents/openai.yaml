@@ -1,0 +1,6 @@
+interface:
+  display_name: "Industrial Research Evidence"
+  short_description: "Build audit-ready XLSX evidence workpapers from reports"
+  default_prompt: "Use $evidence to generate an evidence-backed XLSX workpaper from this PDF or DOCX industry report."
+policy:
+  allow_implicit_invocation: true
