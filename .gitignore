@@ -1,6 +1,7 @@
 evidence/result/
 node_modules/
 output/
+outputs/
 *.inspect.ndjson
 __pycache__/
 *.pyc

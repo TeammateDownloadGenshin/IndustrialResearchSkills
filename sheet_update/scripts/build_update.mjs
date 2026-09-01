@@ -81,7 +81,7 @@ async function addEvidenceCard(sheet, row, evidenceItem, filing, supportedCells,
   deferredHyperlinks.push({ range: linkRange, formula: hyperlinkFormula(filing.url) });
   row += 1;
   const image = await loadImage(screenshotPath, sharp);
-  const scale = Math.min(1400 / image.width, 1800 / image.height, 1);
+  const scale = Math.min(960 / image.width, 1800 / image.height, 1);
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   sheet.images.add({ dataUrl: image.dataUrl, anchor: { from: { row, col: 0, rowOffsetPx: 2, colOffsetPx: 2 }, extent: { widthPx: width, heightPx: height } } });
@@ -151,8 +151,29 @@ async function main() {
   const { FileBlob, SpreadsheetFile } = artifactTool;
   const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(inputPath));
   workbook.comments.setSelf({ displayName: "User" });
+  for (const item of manifest.helper_sheets || []) {
+    if (!item.name) throw new Error("Helper sheet requires a name.");
+    if (workbook.worksheets.items.some((sheet) => sheet.name === item.name)) throw new Error(`Helper sheet already exists: ${item.name}`);
+    const helper = workbook.worksheets.add(item.name);
+    helper.visibility = item.visibility || "hidden";
+  }
   const sheetNames = new Set(workbook.worksheets.items.map((sheet) => sheet.name));
   const changedSheets = new Set();
+
+  for (const item of manifest.hidden_ranges || []) {
+    if (!sheetNames.has(item.sheet)) throw new Error(`Hidden range references missing sheet: ${item.sheet}`);
+    const range = workbook.worksheets.getItem(item.sheet).getRange(item.range);
+    if (item.hide === "rows") range.format.rowHidden = true;
+    else range.format.columnHidden = true;
+    changedSheets.add(item.sheet);
+  }
+
+  for (const item of manifest.clear_ranges || []) {
+    if (!sheetNames.has(item.sheet)) throw new Error(`Clear range references missing sheet: ${item.sheet}`);
+    const sheet = workbook.worksheets.getItem(item.sheet);
+    sheet.getRange(item.range).clear(item.apply_to || "contents");
+    changedSheets.add(item.sheet);
+  }
 
   for (const item of manifest.copy_ranges || []) {
     if (!sheetNames.has(item.sheet)) throw new Error(`Copy range references missing sheet: ${item.sheet}`);
@@ -182,19 +203,57 @@ async function main() {
     changedSheets.add(item.sheet);
   }
 
+  const replacementGroups = new Map();
+  const chartReplacements = [];
   for (const item of manifest.chart_updates || []) {
     if (!sheetNames.has(item.sheet)) throw new Error(`Chart update references missing sheet: ${item.sheet}`);
     const sheet = workbook.worksheets.getItem(item.sheet);
     const chart = sheet.charts.items[Number(item.chart_index)];
     if (!chart) throw new Error(`Chart index ${item.chart_index} is unavailable on ${item.sheet}.`);
-    if (item.data_range) chart.setData(sheet.getRange(item.data_range));
-    else {
+    if (item.replace_chart) chartReplacements.push({ item, sheet });
+    else if (item.data_range) chart.setData(sheet.getRange(item.data_range));
+    else if (item.replace_series) {
+      const key = `${item.sheet}\u0000${item.chart_index}`;
+      if (!replacementGroups.has(key)) replacementGroups.set(key, { chart, items: [] });
+      replacementGroups.get(key).items.push(item);
+    } else {
       const series = chart.series.items[Number(item.series_index)];
       if (!series) throw new Error(`Series index ${item.series_index} is unavailable on chart ${item.chart_index} in ${item.sheet}.`);
       if (item.category_formula) series.categoryFormula = String(item.category_formula).replace(/^=/, "");
       if (item.formula) series.formula = String(item.formula).replace(/^=/, "");
+      if (item.name) series.name = item.name;
     }
     changedSheets.add(item.sheet);
+  }
+  for (const group of replacementGroups.values()) {
+    const snapshots = group.chart.series.items.map((series) => series.toProto());
+    for (const item of group.items) {
+      const snapshot = snapshots[Number(item.series_index)];
+      if (!snapshot) throw new Error(`Series index ${item.series_index} is unavailable for replacement.`);
+      if (item.category_formula) snapshot.categoryFormula = String(item.category_formula).replace(/^=/, "");
+      if (item.formula) snapshot.formula = String(item.formula).replace(/^=/, "");
+      if (item.name) snapshot.name = item.name;
+    }
+    group.chart.series.deleteAll();
+    for (const snapshot of snapshots) {
+      const replacement = group.chart.series.add(snapshot.name || "");
+      for (const key of ["formula", "categoryFormula", "smooth", "valuesFormatCode"]) {
+        if (snapshot[key] !== undefined) replacement[key] = snapshot[key];
+      }
+    }
+  }
+  chartReplacements.sort((left, right) => left.item.sheet.localeCompare(right.item.sheet) || Number(right.item.chart_index) - Number(left.item.chart_index));
+  for (const { item, sheet } of chartReplacements) {
+    const original = sheet.charts.items[Number(item.chart_index)];
+    if (!original) throw new Error(`Chart index ${item.chart_index} is unavailable for replacement on ${item.sheet}.`);
+    const anchor = original.captureAnchorSnapshot();
+    const chartType = item.chart_type || original.type || "line";
+    const title = original.titleText || "";
+    const legendPosition = original.legend?.position;
+    original.delete();
+    const replacement = sheet.charts.add(chartType, { chartType, anchor, title, hasLegend: true, legend: legendPosition !== undefined ? { position: legendPosition } : undefined });
+    const dataSheet = item.data_sheet ? workbook.worksheets.getItem(item.data_sheet) : sheet;
+    replacement.setData(dataSheet.getRange(item.data_range));
   }
 
   const deferredHyperlinks = [];
@@ -231,6 +290,7 @@ async function main() {
   await fs.mkdir(previewDir, { recursive: true });
   const previewFiles = [];
   for (const sheetName of changedSheets) {
+    if (workbook.worksheets.getItem(sheetName).visibility === "hidden") continue;
     const preview = await workbook.render({ sheetName, autoCrop: "all", scale: 0.8, format: "png" });
     const previewPath = path.join(previewDir, `${safeName(sheetName)}.png`);
     await fs.writeFile(previewPath, new Uint8Array(await preview.arrayBuffer()));

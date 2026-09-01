@@ -39,6 +39,15 @@ Use UTF-8 JSON. Project keys and enum values are English; source titles and quot
       "evidence_ids": ["EV001"]
     }
   ],
+  "clear_ranges": [
+    { "sheet": "Quarterly", "range": "A22:U23", "apply_to": "contents" }
+  ],
+  "hidden_ranges": [
+    { "sheet": "Quarterly", "range": "AG:AO", "hide": "columns" }
+  ],
+  "helper_sheets": [
+    { "name": "__sheet_update_helpers", "visibility": "hidden" }
+  ],
   "copy_ranges": [
     { "sheet": "Financials", "source": "D4:D20", "destination": "E4:E20", "copy_type": "all" }
   ],
@@ -69,6 +78,8 @@ Use UTF-8 JSON. Project keys and enum values are English; source titles and quot
       "series_index": 0,
       "category_formula": "='Quarterly'!$B$3:$G$3",
       "formula": "='Quarterly'!$B$7:$G$7"
+      ,"name": "Revenue",
+      "replace_series": true
     }
   ],
   "evidence": [
@@ -89,5 +100,7 @@ Use UTF-8 JSON. Project keys and enum values are English; source titles and quot
 ```
 
 Allowed `source_type` values are `exchange`, `cninfo`, `company_periodic_report`, and `company_ir`. Allowed `kind` values are `reported_value`, `formula`, and `label`. Allowed `statement_type` values are `income_statement`, `balance_sheet`, `cash_flow_statement`, `notes`, and `other_official_table`.
+
+`clear_ranges` is optional. It is intended for moving or rebuilding a period table while preserving drawings and unrelated cells. `apply_to` defaults to `contents`. `hidden_ranges` may hide helper rows or columns used by chart sources. `helper_sheets` may add hidden, English-named calculation sheets for auditable chart sources; chart updates reference them with `data_sheet`. A chart update may also set a series `name`. Set `replace_series` to `true` when an imported chart type ignores direct series-formula assignment. Set `replace_chart` to `true` with `data_range` when an imported combo chart ignores all source updates; the builder preserves its anchor, then reconstructs a supported chart from the helper range.
 
 Every `reported_value` update requires a `raw_value_id` and at least one evidence ID. Every evidence item requires a filing, PDF page, screenshot, and supported update IDs. Use one-based PDF page numbers.

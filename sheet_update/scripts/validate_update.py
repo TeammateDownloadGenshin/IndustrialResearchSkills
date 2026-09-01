@@ -132,7 +132,9 @@ def main() -> int:
         input_path = (manifest_path.parent / input_path).resolve()
     baseline = load_workbook(input_path) if input_path.is_file() else None
     if baseline:
-        if baseline.sheet_order != output.sheet_order:
+        helper_names = {item.get("name") for item in manifest.get("helper_sheets", [])}
+        output_without_helpers = [name for name in output.sheet_order if name not in helper_names]
+        if baseline.sheet_order != output_without_helpers:
             failures.append("Worksheet order changed.")
         for sheet in manifest.get("protected_sheets", []):
             if logical_cells(baseline.cells.get(sheet, {})) != logical_cells(output.cells.get(sheet, {})):

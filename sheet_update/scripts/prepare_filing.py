@@ -19,6 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("filing", type=Path)
     parser.add_argument("--work-dir", required=True, type=Path)
     parser.add_argument("--render-dpi", type=int, default=140)
+    parser.add_argument("--skip-render", action="store_true", help="Extract text without rendering every page.")
     return parser.parse_args()
 
 
@@ -61,7 +62,7 @@ def main() -> int:
 
     pdftoppm = resolve_pdftoppm()
     rendered = False
-    if pdftoppm:
+    if pdftoppm and not args.skip_render:
         output_prefix = pages_dir / "page"
         command = [
             pdftoppm,
