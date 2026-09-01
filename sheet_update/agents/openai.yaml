@@ -1,0 +1,6 @@
+interface:
+  display_name: "A-Share Workpaper Update"
+  short_description: "Update financial workpapers from official filings"
+  default_prompt: "Use $sheet-update to update this A-share XLSX workpaper to the reporting period I specify, with official filing evidence screenshots."
+policy:
+  allow_implicit_invocation: true
