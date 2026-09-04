@@ -2,8 +2,12 @@ evidence/result/
 node_modules/
 output/
 outputs/
+.codex_tmp*/
+*_render*/
+.validation-deps/
+*.log
 *.inspect.ndjson
-__pycache__/
+**/__pycache__/
 *.pyc
 .DS_Store
 Thumbs.db

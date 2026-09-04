@@ -1,36 +1,49 @@
 # IndustrialResearchSkills
 
-`IndustrialResearchSkills` is a collection of Codex skills for industry-research workflows.
+`IndustrialResearchSkills` is an explicit-only Codex plugin for evidence-led healthcare industry, public-company, equity, and biomedical research.
 
-## Available sub-skills
+It combines an analyst workflow router with two deterministic workpaper modules:
 
-The repository currently contains two sub-skills:
-
-- [`evidence`](evidence/SKILL.md) — evidence workpaper sourcing. It extracts semantic blocks and material claims from PDF or DOCX industry reports, searches for eligible primary evidence, captures the supporting passages, and assembles an auditable XLSX workpaper.
-- [`sheet-update`](sheet_update/SKILL.md) — A-share financial workpaper updating. It rolls an existing XLSX forward to a user-specified reporting period using official periodic filings, auditable formulas, and filing evidence screenshots placed below each updated sheet.
-
-The `evidence` sub-skill rejects sell-side and brokerage research as supporting evidence, applies a report-date publication cutoff, and keeps unsupported claims visible as unresolved items.
-
-## Examples
-
-Evidence workpapers:
-
-- [`example-evidence-guobang-20260706.xlsx`](examples/example-evidence-guobang-20260706.xlsx)
-- [`example-evidence-innovative-drugs-2025-2026-mrna.xlsx`](examples/example-evidence-innovative-drugs-2025-2026-mrna.xlsx)
-
-Sheet-update workpapers:
-
-- [`example-jianyou-2025-2026q1-workpaper.xlsx`](examples/example-jianyou-2025-2026q1-workpaper.xlsx)
-- [`example-jianyou-2026h1-updated-workpaper.xlsx`](examples/example-jianyou-2026h1-updated-workpaper.xlsx)
-
-The example workbooks are read-only visual references. Their contents are preserved as originally supplied.
+- healthcare earnings notes, company deep dives, biomedical asset/platform diligence, thematic research, MNC comparisons, catalyst reviews, weekly reports, and source-backed figure/document QA;
+- [`evidence`](evidence/SKILL.md), which turns a PDF or DOCX report into an auditable side-by-side XLSX evidence workpaper;
+- [`sheet_update`](sheet_update/SKILL.md), which rolls an A-share XLSX workpaper to a new official reporting period with formulas and filing evidence.
 
 ## Invocation
 
-```text
-Use $evidence to generate an evidence-backed XLSX workpaper from this PDF or DOCX industry report.
+The combined skill does not run automatically. Select it from the `/` menu or invoke:
 
-Use $sheet-update to update this A-share XLSX workpaper to 2026H1 using official periodic filings and evidence screenshots.
+```text
+$industrial-research-skills
 ```
 
-See each sub-skill's `SKILL.md` for its workflow, source restrictions, runtime boundaries, and completion criteria.
+The policy is fixed in [`agents/openai.yaml`](skills/industrial-research-skills/agents/openai.yaml) as `allow_implicit_invocation: false`.
+
+## Repository layout
+
+```text
+.codex-plugin/plugin.json                 Plugin manifest
+.mcp.json                                Read-only local MCP configuration
+scripts/mcp_server.py                    Fixed-reference MCP server
+skills/industrial-research-skills/       Combined skill and analyst workflows
+evidence/                                Canonical evidence-workpaper module
+sheet_update/                            Canonical A-share update module
+examples/                                Legacy visual examples
+```
+
+The combined skill links to the canonical `evidence` and `sheet_update` modules rather than copying their scripts or schemas.
+
+## Safety boundary
+
+- The MCP server is local, read-only, standard-library-only, and exposes a fixed reference allowlist.
+- No API key is required.
+- Browser capture is limited to public evidence and must stop at authentication, paywalls, CAPTCHAs, robots restrictions, or rate limits.
+- Research artifacts, outputs, rendered previews, browser profiles, caches, and interpreter bytecode are excluded from source control.
+- Material claims must remain traceable to time-valid primary evidence; unresolved items stay visible.
+
+See [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) and [`upstream-provenance.md`](skills/industrial-research-skills/references/upstream-provenance.md) for dependency, provenance, and exclusion decisions.
+
+## Validation
+
+The repository is validated with the Codex skill and plugin validators, Python compilation, module self-checks, and an MCP initialize/list/read smoke test before release.
+
+The binary workbooks in `examples/` are retained only as legacy visual references. New tests should use small generated fixtures; do not add proprietary reports, filings, browser profiles, or large generated workbooks to the repository.

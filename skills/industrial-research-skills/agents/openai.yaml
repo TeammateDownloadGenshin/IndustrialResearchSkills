@@ -1,0 +1,6 @@
+interface:
+  display_name: "IndustrialResearchSkills"
+  short_description: "Healthcare research, workpapers, evidence, and QA"
+  default_prompt: "Use $industrial-research-skills to build a source-backed healthcare research deliverable and its audit trail."
+policy:
+  allow_implicit_invocation: false

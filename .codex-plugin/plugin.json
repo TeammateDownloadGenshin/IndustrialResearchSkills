@@ -1,0 +1,40 @@
+{
+  "name": "industrial-research-skills",
+  "version": "0.2.0+codex.20260904202345",
+  "description": "Explicit-only healthcare industry and biomedical equity research workflows with workpaper, evidence, delivery-QA, and workspace-curation support.",
+  "author": {
+    "name": "Brian Wang",
+    "email": "brianbrian@g.ucla.edu",
+    "url": "https://github.com/TeammateDownloadGenshin"
+  },
+  "homepage": "https://github.com/TeammateDownloadGenshin/IndustrialResearchSkills",
+  "repository": "https://github.com/TeammateDownloadGenshin/IndustrialResearchSkills",
+  "license": "MIT",
+  "keywords": [
+    "industry-research",
+    "equity-research",
+    "biomed",
+    "evidence",
+    "workpapers"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "IndustrialResearchSkills",
+    "shortDescription": "Healthcare research, evidence, workpapers, and QA",
+    "longDescription": "A local, explicit-only research plugin combining healthcare company and industry analysis, biomedical evidence standards, audit-ready workpapers, filing updates, delivery QA, and workspace curation.",
+    "developerName": "Brian Wang",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Research"
+    ],
+    "websiteURL": "https://github.com/TeammateDownloadGenshin/IndustrialResearchSkills",
+    "defaultPrompt": [
+      "Build an evidence-led industry research plan.",
+      "Analyze a biomed company and its clinical pipeline.",
+      "Red-team an equity research thesis."
+    ],
+    "brandColor": "#0B5D5E"
+  }
+}
